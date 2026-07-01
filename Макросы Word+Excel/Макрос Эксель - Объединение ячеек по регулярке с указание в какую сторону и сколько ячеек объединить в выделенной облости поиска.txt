@@ -1,0 +1,105 @@
+Sub SmartFindAndMerge()
+    Dim searchRange As Range
+    Dim cell As Range
+    Dim regexStr As String
+    Dim mergeCount As Long
+    Dim directionStr As String
+    Dim regEx As Object
+    Dim matchesToMerge As Collection
+    Dim targetRange As Range
+    Dim rOffset As Integer, cOffset As Integer
+    
+    ' 1. Проверяем, что выбрано пользователем
+    Set searchRange = Selection
+    
+    ' Исправленная проверка для больших диапазонов (целых столбцов/строк)
+    If searchRange.Cells.Count = 1 Then
+        If searchRange.Value = "" Then
+            MsgBox "Пожалуйста, сначала выделите диапазон для поиска!", vbCritical, "Ошибка"
+            Exit Sub
+        End If
+    End If
+    
+    ' 2. Запрашиваем регулярное выражение
+    regexStr = InputBox("Введите регулярное выражение (например, ^\d+$ для только цифр):", "Шаблон поиска (RegEx)")
+    If regexStr = "" Then Exit Sub ' Отмена
+    
+    ' 3. Запрашиваем количество ячеек
+    On Error Resume Next
+    mergeCount = CLng(InputBox("Сколько ячеек ОБЪЕДИНЯТЬ (включая саму найденную ячейку)? например: 6", "Количество ячеек", 6))
+    On Error GoTo 0
+    If mergeCount <= 1 Then
+        MsgBox "Количество ячеек должно быть больше 1!", vbCritical, "Ошибка"
+        Exit Sub
+    End If
+    
+    ' 4. Запрашиваем направление
+    directionStr = UCase(Trim(InputBox("В какую сторону объединять? Введите букву:" & vbCrLf & _
+                                      "R - вправо (Right)" & vbCrLf & _
+                                      "L - влево (Left)" & vbCrLf & _
+                                      "D - вниз (Down)" & vbCrLf & _
+                                      "U - вверх (Up)", "Направление", "R")))
+                                      
+    If directionStr <> "R" And directionStr <> "L" And directionStr <> "D" And directionStr <> "U" Then
+        MsgBox "Неверно указано направление! Используйте R, L, D или U.", vbCritical, "Ошибка"
+        Exit Sub
+    End If
+    
+    ' Инициализируем объект регулярных выражений
+    Set regEx = CreateObject("VBScript.RegExp")
+    regEx.Pattern = regexStr
+    regEx.IgnoreCase = True
+    regEx.Global = False
+    
+    Set matchesToMerge = New Collection
+    
+    ' Перебираем ячейки. Чтобы не зависнуть на целом столбце, берем только используемую область
+    Dim intersectRange As Range
+    Set intersectRange = Intersect(searchRange, searchRange.Worksheet.UsedRange)
+    
+    If intersectRange Is Nothing Then
+        MsgBox "Выделенный диапазон пуст.", vbInformation, "Результат"
+        Exit Sub
+    End If
+    
+    ' Ищем совпадения
+    For Each cell In intersectRange.Cells
+        ' Проверяем текст ячейки по регулярке
+        If regEx.Test(cell.Text) Then
+            matchesToMerge.Add cell
+        End If
+    Next cell
+    
+    ' Если ничего не нашли
+    If matchesToMerge.Count = 0 Then
+        MsgBox "Ячейки, соответствующие регулярному выражению, не найдены.", vbInformation, "Результат"
+        Exit Sub
+    End If
+    
+    ' Отключаем предупреждения и обновление экрана для скорости
+    Application.DisplayAlerts = False
+    Application.ScreenUpdating = False
+    
+    ' Задаем смещение в зависимости от направления
+    Select Case directionStr
+        Case "R": rOffset = 0: cOffset = mergeCount - 1
+        Case "L": rOffset = 0: cOffset = -(mergeCount - 1)
+        Case "D": rOffset = mergeCount - 1: cOffset = 0
+        Case "U": rOffset = -(mergeCount - 1): cOffset = 0
+    End Select
+    
+    ' Объединяем ячейки
+    For Each cell In matchesToMerge
+        On Error Resume Next ' На случай выхода за границы листа или конфликта геометрии
+        Set targetRange = Range(cell, cell.Offset(rOffset, cOffset))
+        If Not targetRange Is Nothing Then
+            targetRange.Merge
+        End If
+        On Error GoTo 0
+    Next cell
+    
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
+    
+    MsgBox "Успешно обработано ячеек: " & matchesToMerge.Count, vbInformation, "Готово"
+End Sub

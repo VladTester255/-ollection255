@@ -1,0 +1,9 @@
+Sub RemoveCompatibilityModeAllOpenDocs()
+    Dim doc As Document
+    For Each doc In Application.Documents
+        If doc.CompatibilityMode <> wdWord2013 Then ' или последний формат Word
+            doc.Convert
+        End If
+    Next doc
+    MsgBox "Режим совместимости убран во всех открытых документах (без сохранения)."
+End Sub

@@ -1,0 +1,22 @@
+Function OnlyLettersNumbersRegExp(rng As Range) As String
+    Dim regEx As Object
+    Dim matches As Object
+    Dim match As Object
+    Dim result As String
+    
+    Set regEx = CreateObject("VBScript.RegExp")
+    regEx.Global = True
+    regEx.IgnoreCase = True
+    ' Ïàòòåðí: âñå áóêâû (ðóññêèå è àíãëèéñêèå) è öèôðû
+    regEx.Pattern = "[A-Za-zÀ-ßà-ÿ¨¸0-9]+"
+    
+    Set matches = regEx.Execute(rng.Value)
+    
+    result = ""
+    For Each match In matches
+        result = result & match.Value
+    Next
+    
+    OnlyLettersNumbersRegExp = LCase(result)
+End Function
+

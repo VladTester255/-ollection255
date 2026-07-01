@@ -1,0 +1,26 @@
+Sub ОчисткаОтЗаливокВыделенногоТекста()
+    Dim rng As Range
+    Dim para As Paragraph
+    Dim tbl As Table
+    Dim cel As Cell
+
+    ' Определяем диапазон выделения
+    Set rng = Selection.Range
+
+    ' Удаляем заливку заливки у текста (Font.Shading)
+    rng.Font.Shading.BackgroundPatternColor = wdColorAutomatic
+
+    ' Удаляем заливку у параграфов (Paragraph.Shading)
+    For Each para In rng.Paragraphs
+        para.Shading.BackgroundPatternColor = wdColorAutomatic
+    Next para
+
+    ' Удаляем заливку у ячеек таблицы (Cell.Shading), если они в выделении
+    For Each tbl In rng.Tables
+        For Each cel In tbl.Range.Cells
+            If rng.InRange(cel.Range) Then
+                cel.Shading.BackgroundPatternColor = wdColorAutomatic
+            End If
+        Next cel
+    Next tbl
+End Sub

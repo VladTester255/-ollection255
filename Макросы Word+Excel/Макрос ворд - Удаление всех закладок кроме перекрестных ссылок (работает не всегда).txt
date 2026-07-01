@@ -1,0 +1,22 @@
+Sub DeleteBookmarksExceptUsedInFields()
+' Макрос ворд - Удаление всех закладок кроме перекрестных ссылок
+	Dim nBK As Long
+	Dim found As Boolean
+	Dim field As field
+	With ActiveDocument
+		For nBK = .bookmarks.count To 1 Step -1
+			found = False
+			' Проверяем, используется ли закладка в любых полях документа
+			For Each field In .Fields
+				If InStr(field.Code.Text, .bookmarks(nBK).Name) <> 0 Then
+					found = True
+					Exit For
+				End If
+			Next field
+			' Если закладка не найдена в полях, удаляем ее
+			If Not found Then
+				.bookmarks(nBK).Delete
+			End If
+		Next nBK
+	End With
+End Sub

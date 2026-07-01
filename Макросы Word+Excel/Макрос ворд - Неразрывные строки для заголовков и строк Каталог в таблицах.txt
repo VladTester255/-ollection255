@@ -1,0 +1,49 @@
+Sub СтрокаКаталогИЗаголовкиНеразрывныОтСледСтроки()
+'
+' галка не отрывать от следующего для строк таблицы с Каталог
+'
+'
+    Selection.Find.ClearFormatting
+    Selection.Find.Replacement.ClearFormatting
+    With Selection.Find.Replacement.ParagraphFormat
+        .SpaceBeforeAuto = False
+        .SpaceAfterAuto = False
+        .KeepWithNext = True
+    End With
+    With Selection.Find
+        .Text = "Каталог "
+        .Replacement.Text = "^&"
+        .Forward = True
+        .Wrap = wdFindContinue
+        .Format = True
+        .MatchCase = True
+        .MatchWholeWord = False
+        .MatchWildcards = False
+        .MatchSoundsLike = False
+        .MatchAllWordForms = False
+    End With
+    Selection.Find.Execute Replace:=wdReplaceAll
+' галка не отрывать от следующего для заголовков таблиц
+'
+'
+    Selection.Find.ClearFormatting
+    Selection.Find.Replacement.ClearFormatting
+    With Selection.Find.Replacement.ParagraphFormat
+        .SpaceBeforeAuto = False
+        .SpaceAfterAuto = False
+        .KeepWithNext = True
+    End With
+    With Selection.Find
+        .Text = "№ пп"
+        .Replacement.Text = "^&"
+        .Forward = True
+        .Wrap = wdFindContinue
+        .Format = True
+        .MatchCase = True
+        .MatchWholeWord = False
+        .MatchWildcards = False
+        .MatchSoundsLike = False
+        .MatchAllWordForms = False
+    End With
+    Selection.Find.Execute Replace:=wdReplaceAll
+End Sub

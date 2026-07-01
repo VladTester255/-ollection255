@@ -1,0 +1,9 @@
+Sub ВыделитьВсеТаблицы()
+Dim mytable As Table
+
+For Each mytable In ActiveDocument.Tables
+mytable.Range.Editors.Add wdEditorEveryone
+Next
+ActiveDocument.SelectAllEditableRanges (wdEditorEveryone)
+ActiveDocument.DeleteAllEditableRanges (wdEditorEveryone)
+End Sub

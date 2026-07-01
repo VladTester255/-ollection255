@@ -1,0 +1,19 @@
+Sub Удалить_пробелы_в_начале_и_конце_всех_таблиц()
+    Dim tbl As Table
+    Dim C As Cell
+    Dim s As String, d As String
+
+    Application.ScreenUpdating = False
+    
+    ' Проходим по всем таблицам в документе
+    For Each tbl In ActiveDocument.Tables
+        ' Проходим по всем ячейкам в текущей таблице
+        For Each C In tbl.Range.Cells
+            s = C.Range.Text
+            d = Trim$(Left$(s, Len(s) - 2)) ' Удаляем последний символ (обычно это символ конца ячейки)
+            If Len(s) <> Len(d) Then C.Range.Text = d ' Обновляем текст ячейки, если длина изменилась
+        Next C
+    Next tbl
+    
+    Application.ScreenUpdating = True
+End Sub

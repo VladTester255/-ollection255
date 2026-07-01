@@ -1,0 +1,10 @@
+Sub Удалить_пробелы_в_начале_и_конце_этой_таблицы()
+  Dim C As cell, s$, d$
+    Application.ScreenUpdating = False
+    For Each C In Selection.Tables(1).Range.Cells
+        s = C.Range.Text
+        d = Trim$(Left$(s, Len(s) - 2))
+        If Len(s) <> Len(d) Then C.Range.Text = d
+    Next
+    Application.ScreenUpdating = True
+End Sub

@@ -1,0 +1,26 @@
+Sub Anonymizer()
+' Макрос ворд - Очистака метаданных
+Application.ScreenUpdating = False
+With ActiveDocument
+	.RemoveDocumentInformation (wdRDIVersions)
+	.RemoveDocumentInformation (wdRDIRemovePersonalInformation) ' После использования разрешить сохранение изменений метаданных
+	.RemoveDocumentInformation (wdRDIEmailHeader)
+	.RemoveDocumentInformation (wdRDIRoutingSlip)
+	.RemoveDocumentInformation (wdRDISendForReview)
+	.RemoveDocumentInformation (wdRDIDocumentProperties) ' После использования разрешить сохранение изменений метаданных
+	.RemoveDocumentInformation (wdRDITemplate)
+	.RemoveDocumentInformation (wdRDIInkAnnotations)
+	.RemoveDocumentInformation (wdRDIDocumentServerProperties)
+	.RemoveDocumentInformation (wdRDIDocumentManagementPolicy)
+	.RemoveDocumentInformation (wdRDIContentType)
+End With
+' save as
+Set fd = Application.FileDialog(msoFileDialogSaveAs)
+	With fd
+		If .Show Then
+			ActiveDocument.SaveAs2 FileName:=.SelectedItems(1), FileFormat:=wdNormal
+		End If
+	End With
+Set fd = Nothing
+Application.ScreenUpdating = True
+End Sub

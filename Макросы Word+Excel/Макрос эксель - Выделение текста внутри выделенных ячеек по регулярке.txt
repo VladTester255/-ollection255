@@ -1,0 +1,208 @@
+Sub RegexReplaceWithFormattingOnSelection()
+On Error GoTo ErrHandler
+Dim regEx As Object, matches As Object, m As Object
+Dim findPattern As String, replacePattern As String
+Dim applyBold As Boolean, applyItalic As Boolean
+Dim applyColor As Long
+Dim applyFontName As String
+Dim applyFontSize As Long
+Dim rng As Range, cell As Range
+Dim txt As String, newTxt As String
+Dim i As Long, pos As Long, delta As Long
+Dim logSht As Worksheet, logRow As Long
+Dim wb As Workbook
+Set wb = ThisWorkbook
+
+' ---------- Настройки форматирования применяемой замены ----------
+applyBold = True            ' сделать заменённый фрагмент жирным
+applyItalic = False         ' курсив
+applyColor = RGB(0, 0, 0)   ' цвет шрифта для заменённого фрагмента (RGB)
+applyFontName = "Arial"     ' имя шрифта; пустая строка = не менять
+applyFontSize = 10          ' размер шрифта; 0 = не менять
+' ----------------------------------------------------------------
+
+' Ввод регулярного выражения и строки замены ([пП]риорит.{1,5} [ABCDEАВСДЕ]|[Кк]лас.{1,5} [ABCDEАВСДЕ]|[Кк]атегор.{1,5} [ABCDEАВСДЕ])
+findPattern = InputBox("Введите регулярное выражение (регистрозависимое):", "Регулярное выражение")
+If findPattern = "" Then Exit Sub
+replacePattern = InputBox("Введите строку замены (поддерживает $1, $2 ...):", "Строка замены")
+If replacePattern = "" Then
+    ' Разрешаем пустую замену — тогда фрагмент просто удаляется, но формат не применяется
+End If
+
+' Проверка выделения
+If TypeName(Selection) <> "Range" Then
+    MsgBox "Выберите диапазон ячеек и запустите макрос снова.", vbExclamation
+    Exit Sub
+End If
+Set rng = Selection
+
+' Лог
+On Error Resume Next
+Set logSht = wb.Worksheets("RegexReplace_Log")
+If logSht Is Nothing Then
+    Set logSht = wb.Worksheets.Add
+    logSht.name = "RegexReplace_Log"
+Else
+    logSht.Cells.Clear
+End If
+On Error GoTo ErrHandler
+logSht.Range("A1:D1").Value = Array("Cell", "MatchesFound", "ReplacementsMade", "Note")
+logRow = 2
+
+' Инициализация RegExp (VBScript.RegExp)
+Set regEx = CreateObject("VBScript.RegExp")
+regEx.Pattern = findPattern
+regEx.Global = True
+regEx.MultiLine = True
+regEx.IgnoreCase = False   ' регистрозависимый по требованию
+
+Application.ScreenUpdating = False
+Application.EnableEvents = False
+
+For Each cell In rng.Cells
+    On Error Resume Next
+    ' Обрабатываем объединённые ячейки: работаем с верхней левой ячейкой объединения
+    If cell.MergeCells Then
+        If cell.Address <> cell.MergeArea.Cells(1, 1).Address Then
+            GoTo LogSkipMerged ' пропускаем, обработаем через верхнюю ячейку
+        Else
+            ' используем весь текст MergeArea(1,1)
+        End If
+    End If
+    On Error GoTo ErrHandler
+
+    ' Пропускаем формулы — работаем только с текстом/числом
+    If cell.HasFormula Then
+        logSht.Cells(logRow, 1).Value = cell.Address(False, False)
+        logSht.Cells(logRow, 2).Value = 0
+        logSht.Cells(logRow, 3).Value = 0
+        logSht.Cells(logRow, 4).Value = "Skipped (formula)"
+        logRow = logRow + 1
+        GoTo NextCell
+    End If
+
+    txt = CStr(cell.Value)
+    If txt = "" Then
+        logSht.Cells(logRow, 1).Value = cell.Address(False, False)
+        logSht.Cells(logRow, 2).Value = 0
+        logSht.Cells(logRow, 3).Value = 0
+        logSht.Cells(logRow, 4).Value = "Empty"
+        logRow = logRow + 1
+        GoTo NextCell
+    End If
+
+    If Not regEx.Test(txt) Then
+        logSht.Cells(logRow, 1).Value = cell.Address(False, False)
+        logSht.Cells(logRow, 2).Value = 0
+        logSht.Cells(logRow, 3).Value = 0
+        logSht.Cells(logRow, 4).Value = "No matches"
+        logRow = logRow + 1
+        GoTo NextCell
+    End If
+
+    Set matches = regEx.Execute(txt)
+    Dim matchesCount As Long: matchesCount = matches.Count
+    Dim replCount As Long: replCount = 0
+
+    ' Чтобы сохранить оригинальную форму текста и применять формат по позициям,
+    ' создаём итоговую строку, подставляя replacement и запоминая позиции замен.
+    newTxt = txt
+    delta = 0 ' сдвиг позиции при изменении длины строки
+
+    ' Проходим matches в порядке слева направо — важно: заменяем справа налево, чтобы индексы не слетели,
+    ' но нужно запомнить позиции и итоговую подстроку после подстановки $1..$n
+    Dim repPositions() As Long, repLengths() As Long
+    ReDim repPositions(1 To matchesCount)
+    ReDim repLengths(1 To matchesCount)
+    Dim repTexts() As String
+    ReDim repTexts(1 To matchesCount)
+
+    For i = 1 To matchesCount
+        Set m = matches(i - 1)
+        ' Формируем replacement с подстановкой $1..$n
+        Dim tmpRepl As String
+        tmpRepl = replacePattern
+        Dim gi As Long
+        For gi = 1 To m.SubMatches.Count
+            tmpRepl = Replace(tmpRepl, "$" & gi, m.SubMatches(gi - 1))
+        Next gi
+        ' Также поддержим $0 как весь матч
+        tmpRepl = Replace(tmpRepl, "$0", m.Value)
+
+        ' Сохраняем позицию и текст замены; позиция в символах (1-based)
+        repPositions(i) = m.FirstIndex + 1 ' FirstIndex 0-based
+        repTexts(i) = tmpRepl
+        repLengths(i) = Len(m.Value)
+    Next i
+
+    ' Делаем замены справа налево
+    For i = matchesCount To 1 Step -1
+        pos = repPositions(i)
+        Dim oldLen As Long: oldLen = repLengths(i)
+        Dim newLen As Long: newLen = Len(repTexts(i))
+        ' Выполняем замену в тексте
+        newTxt = Mid(newTxt, 1, pos - 1) & repTexts(i) & Mid(newTxt, pos + oldLen)
+    Next i
+
+    ' Записываем новый текст в ячейку (заменяем содержимое)
+    cell.Value = newTxt
+    replCount = matchesCount
+
+    ' Применяем форматирование к каждой вставленной подстроке:
+    ' Находим каждую реплику уже в новой строке по позициям (учитываем предыдущие замены)
+    ' Для этого пересчитываем позиции слева направо
+    Dim curPos As Long: curPos = 1
+    Dim j As Long
+    ' Пересчитываем позиции окончательно, находя репTexts по последовательному поиску
+    For j = 1 To matchesCount
+        Dim findText As String
+        findText = repTexts(j)
+        If findText = "" Then
+            ' если пустая замена — ничего не форматируем
+            GoTo SkipFormatForThis
+        End If
+        ' Находим в newTxt, начиная с curPos
+        Dim foundAt As Long
+        foundAt = InStr(curPos, newTxt, findText, vbBinaryCompare)
+        If foundAt = 0 Then
+            ' если не найдено (маловероятно), ищем с текстовой регистронезависимостью
+            foundAt = InStr(curPos, newTxt, findText, vbTextCompare)
+        End If
+        If foundAt > 0 Then
+            ' применяем формат к диапазону символов foundAt .. foundAt+Len(findText)-1
+            With cell.Characters(Start:=foundAt, Length:=Len(findText)).Font
+                .Bold = applyBold
+                .Italic = applyItalic
+                .Color = applyColor
+                If applyFontName <> "" Then .name = applyFontName
+                If applyFontSize > 0 Then .Size = applyFontSize
+            End With
+            curPos = foundAt + Len(findText)
+        Else
+            curPos = curPos + 1
+        End If
+SkipFormatForThis:
+Next j
+    ' Логируем
+    logSht.Cells(logRow, 1).Value = cell.Address(False, False)
+    logSht.Cells(logRow, 2).Value = matchesCount
+    logSht.Cells(logRow, 3).Value = replCount
+    logSht.Cells(logRow, 4).Value = "OK"
+    logRow = logRow + 1
+NextCell:
+Continue:
+Next cell
+Application.EnableEvents = True
+Application.ScreenUpdating = True
+
+MsgBox "Готово. Смотрите лист RegexReplace_Log.", vbInformation
+Exit Sub
+LogSkipMerged:
+' пропущенные ячейки в MergeArea будут обработаны через верхнюю левую ячейку
+GoTo NextCell
+
+ErrHandler:
+Application.EnableEvents = True
+Application.ScreenUpdating = True
+MsgBox "Ошибка " & Err.Number & ": " & Err.Description, vbExclamation
+End Sub

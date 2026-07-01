@@ -1,0 +1,24 @@
+Sub ПовторШапкиТаблИДвЛиния()
+	Dim tbl As Table
+    Dim headerRow As row
+
+    ' Проходим по всем таблицам в документе
+    For Each tbl In ActiveDocument.Tables
+        ' Устанавливаем первую строку как заголовок
+        Set headerRow = tbl.Rows(1)
+        headerRow.HeadingFormat = True
+        
+        ' Устанавливаем двойную линию нижней границы первой строки
+        With headerRow.Borders(wdBorderBottom)
+            .LineStyle = wdLineStyleDouble
+            .LineWidth = wdLineWidth050pt
+            .Color = RGB(0, 0, 0) ' Чёрный цвет
+        End With
+        
+        ' Убедимся, что заголовок повторяется на каждой странице
+        tbl.Rows(1).Cells(1).Range.Select
+        Selection.Tables(1).Rows(1).HeadingFormat = True
+    Next tbl
+    
+    MsgBox "Заголовки таблиц обновлены!"
+End Sub

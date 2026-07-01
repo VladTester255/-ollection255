@@ -1,0 +1,42 @@
+Sub ТаблицаСтильИРазряженность()
+'
+' название таблицы по шаблону
+'
+'
+    Selection.Find.ClearFormatting
+    Selection.Find.Replacement.ClearFormatting
+    Selection.Find.Replacement.Style = ActiveDocument.Styles("Таб.Заголовок")
+    Selection.Find.Replacement.Font.Spacing = 1
+    With Selection.Find
+        .Text = "Таблица "
+        .Replacement.Text = "Таблица^s"
+        .Forward = True
+        .Wrap = wdFindAsk
+        .Format = True
+        .MatchCase = True
+        .MatchWholeWord = False
+        .MatchWildcards = False
+        .MatchSoundsLike = False
+        .MatchAllWordForms = False
+    End With
+    Selection.Find.Execute Replace:=wdReplaceAll
+End Sub
+Sub СнятьРазряженность()
+'
+' снять во всем доке разряженности
+'
+'
+    Selection.WholeStory
+    With Selection.Font
+        .Name = ""
+        .Spacing = 0
+    End With
+End Sub
+Sub Разряженность()
+'
+' снять разряженность и вставить только для слова Таблица по ГОСт
+'
+'
+    Application.Run MacroName:="СнятьРазряженность"
+    Application.Run MacroName:="ТаблицаСтильИРазряженность"
+End Sub

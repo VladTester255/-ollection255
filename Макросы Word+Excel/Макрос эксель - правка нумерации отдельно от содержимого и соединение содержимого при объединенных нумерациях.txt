@@ -1,0 +1,100 @@
+Sub ProcessNumberingAndContents_FixSpaces()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim r As Long
+    Dim mergeArea As Range
+    Dim numCell As Range
+    Dim mergedText As String
+    Dim contentRange As Range
+    Dim cell As Range
+    Dim patternNumOnly As String
+    Dim reNumOnly As Object
+    Dim patternNumText As String
+    Dim reNumText As Object
+    Dim fullText As String
+    Dim firstSpacePos As Long
+    Dim numberPart As String
+    Dim textPart As String
+
+    Set ws = ActiveSheet
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+
+    ' Регулярные выражения:
+    patternNumOnly = "^\d+(\.\d+)*\.?$"
+    Set reNumOnly = CreateObject("VBScript.RegExp")
+    reNumOnly.pattern = patternNumOnly
+    reNumOnly.IgnoreCase = True
+    reNumOnly.Global = False
+
+    patternNumText = "^\d+(\.\d+)*\.?[\s\u00A0]+.+$"
+    Set reNumText = CreateObject("VBScript.RegExp")
+    reNumText.pattern = patternNumText
+    reNumText.IgnoreCase = True
+    reNumText.Global = False
+
+    Application.ScreenUpdating = False
+
+    For r = 1 To lastRow
+        Set cell = ws.Cells(r, 1)
+        If cell.MergeCells Then
+            Set mergeArea = cell.mergeArea
+            Set numCell = mergeArea.Cells(1, 1)
+            fullText = Trim(numCell.Value)
+
+            mergeArea.UnMerge
+
+            If reNumText.Test(fullText) Then
+                ' Найдём позицию первого пробела или неразрывного пробела
+                firstSpacePos = InStr(fullText, " ")
+                Dim nbSpacePos As Long
+                nbSpacePos = InStr(fullText, Chr(160))
+                If nbSpacePos > 0 And (nbSpacePos < firstSpacePos Or firstSpacePos = 0) Then
+                    firstSpacePos = nbSpacePos
+                End If
+
+                If firstSpacePos > 0 Then
+                    numberPart = Left(fullText, firstSpacePos - 1)
+                    textPart = Mid(fullText, firstSpacePos + 1)
+                Else
+                    numberPart = fullText
+                    textPart = ""
+                End If
+
+                ws.Cells(numCell.Row, 1).Value = numberPart
+                ws.Cells(numCell.Row, 2).Value = textPart
+
+                ws.Range(ws.Cells(numCell.Row, 1), ws.Cells(numCell.Row + mergeArea.Rows.Count - 1, 1)).Interior.ColorIndex = 0
+
+            ElseIf reNumOnly.Test(fullText) Then
+                mergedText = ""
+                For Each contentRange In ws.Range(ws.Cells(mergeArea.Row, 2), ws.Cells(mergeArea.Row + mergeArea.Rows.Count - 1, 2))
+                    If Len(Trim(contentRange.Value)) > 0 Then
+                        If mergedText = "" Then
+                            mergedText = contentRange.Value
+                        Else
+                            mergedText = mergedText & " " & contentRange.Value
+                        End If
+                    End If
+                Next contentRange
+
+                ws.Cells(numCell.Row, 1).Value = fullText
+                ws.Cells(numCell.Row, 2).Value = mergedText
+
+                ws.Range(ws.Cells(numCell.Row, 1), ws.Cells(numCell.Row + mergeArea.Rows.Count - 1, 1)).Interior.ColorIndex = 0
+
+            Else
+                ws.Range(ws.Cells(numCell.Row, 1), ws.Cells(numCell.Row + mergeArea.Rows.Count - 1, 1)).Interior.Color = vbRed
+            End If
+        End If
+    Next r
+
+    ' Удаляем пустые строки
+    For r = lastRow To 1 Step -1
+        If Trim(ws.Cells(r, 1).Value) = "" Then
+            ws.Rows(r).Delete
+        End If
+    Next r
+
+    Application.ScreenUpdating = True
+    MsgBox "Обработка завершена!", vbInformation
+End Sub

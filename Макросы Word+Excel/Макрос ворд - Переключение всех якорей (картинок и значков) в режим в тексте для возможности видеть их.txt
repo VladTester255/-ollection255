@@ -1,0 +1,18 @@
+Sub SwitchAllAnchorsToInLine()
+	Dim shp As Shape
+	Dim ils As InlineShape
+
+	' Обработка объектов Shape (плавающие фигуры, текстовые поля и т.п.)
+	For Each shp In ActiveDocument.Shapes
+		' Проверяем, что объект не встроенный (не InlineShape)
+		If Not shp.Type = msoInlineShape Then
+			' Переключаем обтекание в режим "В тексте"
+			shp.ConvertToInlineShape
+		End If
+	Next shp
+
+	' Обработка встроенных объектов InlineShape (оставим как есть)
+	' Если нужно, можно добавить логику для них, но обычно они уже "в тексте"
+
+	MsgBox "Все объекты переключены в режим 'В тексте'. Якоря удалены.", vbInformation
+End Sub

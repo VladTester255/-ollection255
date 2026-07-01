@@ -1,0 +1,89 @@
+Sub CompareDocumentsByNumber()
+    Dim docs As Documents
+    Set docs = Application.Documents
+    
+    Dim i As Integer
+    Dim docList As String
+    Dim inputStr As String
+    Dim nums() As String
+    Dim num1 As Integer, num2 As Integer
+    Dim originalDoc As Document
+    Dim revisedDoc As Document
+    
+    ' Проверка, что открыто минимум два документа
+    If docs.Count < 2 Then
+        MsgBox "Нужно открыть минимум два документа для сравнения.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Формируем список открытых документов с номерами
+    docList = "Открытые документы:" & vbCrLf & vbCrLf
+    For i = 1 To docs.Count
+        docList = docList & i & ". " & docs(i).Name & " (" & docs(i).Path & ")" & vbCrLf
+    Next i
+    
+    ' Запрос ввода двух номеров через пробел
+    inputStr = InputBox(docList & vbCrLf & "Введите через пробел номера двух документов для сравнения (например: 1 3):", "Выбор документов")
+    
+    If Trim(inputStr) = "" Then Exit Sub ' Отмена
+    
+    ' Разделяем ввод по пробелу
+    nums = Split(Trim(inputStr))
+    
+    If UBound(nums) <> 1 Then
+        MsgBox "Пожалуйста, введите ровно два номера через пробел.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Проверяем, что введены числа и они в диапазоне
+    If Not IsNumeric(nums(0)) Or Not IsNumeric(nums(1)) Then
+        MsgBox "Ввод должен содержать только числа.", vbExclamation
+        Exit Sub
+    End If
+    
+    num1 = CInt(nums(0))
+    num2 = CInt(nums(1))
+    
+    If num1 < 1 Or num1 > docs.Count Or num2 < 1 Or num2 > docs.Count Then
+        MsgBox "Номера документов должны быть в диапазоне от 1 до " & docs.Count & ".", vbExclamation
+        Exit Sub
+    End If
+    
+    If num1 = num2 Then
+        MsgBox "Нужно выбрать два разных документа.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Запрос, какой документ считать исходным
+    Dim response As VbMsgBoxResult
+    response = MsgBox("Документ 1: " & docs(num1).Name & vbCrLf & _
+                      "Документ 2: " & docs(num2).Name & vbCrLf & vbCrLf & _
+                      "Нажмите 'Да', если Документ 1 - исходный, 'Нет' - если Документ 2 - исходный.", _
+                      vbYesNoCancel + vbQuestion, "Выбор исходного документа")
+    
+    If response = vbCancel Then Exit Sub
+    
+    If response = vbYes Then
+        Set originalDoc = docs(num1)
+        Set revisedDoc = docs(num2)
+    ElseIf response = vbNo Then
+        Set originalDoc = docs(num2)
+        Set revisedDoc = docs(num1)
+    Else
+        Exit Sub
+    End If
+    
+    ' Выполнение сравнения документов
+    Application.CompareDocuments OriginalDocument:=originalDoc, _
+                                  RevisedDocument:=revisedDoc, _
+                                  Destination:=wdCompareDestinationNew, _
+                                  CompareFormatting:=True, _
+                                  CompareHeaders:=True, _
+                                  CompareFootnotes:=True, _
+                                  CompareTextboxes:=True, _
+                                  CompareFields:=True, _
+                                  CompareComments:=True, _
+                                  CompareMoves:=True, _
+                                  RevisedAuthor:="Различия", _
+                                  IgnoreAllComparisonWarnings:=False
+End Sub

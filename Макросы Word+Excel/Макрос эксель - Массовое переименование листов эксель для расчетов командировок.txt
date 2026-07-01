@@ -1,0 +1,30 @@
+Sub RenameSheetsFromList()
+    Dim rng As Range
+    Dim cell As Range
+    Dim oldName As String, newName As String
+    Dim ws As Worksheet
+    
+    ' Запрос диапазона с двумя столбцами: старое и новое имя листа
+    On Error Resume Next
+    Set rng = Application.InputBox("Выделите диапазон с двумя столбцами: слева - старое имя листа, справа - новое имя", Type:=8)
+    On Error GoTo 0
+    If rng Is Nothing Then Exit Sub
+    
+    For Each cell In rng.Columns(1).Cells
+        oldName = Trim(cell.Value)
+        newName = Trim(cell.Offset(0, 1).Value)
+        
+        If oldName <> "" And newName <> "" Then
+            On Error Resume Next
+            Set ws = ThisWorkbook.Sheets(oldName)
+            If Not ws Is Nothing Then
+                ws.Name = newName
+            Else
+                MsgBox "Лист с именем '" & oldName & "' не найден.", vbExclamation
+            End If
+            Set ws = Nothing
+            On Error GoTo 0
+        End If
+    Next cell
+End Sub
+

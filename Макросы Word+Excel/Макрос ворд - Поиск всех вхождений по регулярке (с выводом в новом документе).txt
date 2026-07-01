@@ -1,0 +1,25 @@
+Sub FindAndExtractText()
+' Макрос ворд - Поиск всех вхождений по регулярке (с выводом в новом документе)
+	Dim docSource As Document
+	Dim docResult As Document
+	Dim rangeSource As Range
+	Dim strPattern As String
+	Dim foundText As String
+	Set docSource = ActiveDocument
+	Set docResult = Documents.Add
+	strPattern = "\(далее – ?@\)"
+	With docSource.Content.Find
+		.ClearFormatting
+		.Text = strPattern
+		.Forward = True
+		.Wrap = wdFindStop
+		.Format = False
+		.MatchWildcards = True
+		Do While .Execute
+			Set rangeSource = .Parent
+			foundText = Trim(rangeSource.Text)
+			docResult.Content.InsertAfter foundText & vbCrLf
+		Loop
+	End With
+	docResult.Activate
+End Sub

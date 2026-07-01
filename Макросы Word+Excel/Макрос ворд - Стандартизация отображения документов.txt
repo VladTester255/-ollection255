@@ -1,0 +1,24 @@
+Sub СтандартизацияВидаДокумента()
+	With ActiveDocument													' Отображение только используемых стилей в документе
+		.FormattingShowFont = False
+		.FormattingShowParagraph = False
+		.FormattingShowNumbering = False
+		.FormattingShowFilter = wdShowFilterStylesInUse
+		.StyleSortMethod = wdStyleSortByName
+		.FormattingShowNextLevel = False
+		.FormattingShowUserStyleName = True
+	End With
+	
+	With ActiveWindow
+		.ActivePane.View.Zoom.Percentage = 100							' Отображение листов в 100 % размере
+		.View.ShowTextBoundaries = True									' Отобразить бортики листов и абзацев в новых версиях офиса
+		.DocumentMap = True												' Отображение облости навигации
+		.ActivePane.DisplayRulers = True								' Отображение линейки
+		.View.TableGridlines = True										' Отображение сетки невидимых ячеек таблиц
+		.ActivePane.View.ShowAll = True									' Отображение невидимых символов
+		.View.ShowBookmarks = True										' Отображение закладок в тексте
+		.View.FieldShading = wdFieldShadingAlways						' Отображение затемненния на "полях" (которые создаются кодами)
+	End With
+	
+	Application.TaskPanes(wdTaskPaneRevealFormatting).Visible = True	' Отображение панели анализа форматирования текста (Shift+F1)
+End Sub

@@ -1,0 +1,58 @@
+Sub SortMultiLevelNumbering()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim maxLevels As Integer
+    Dim i As Long, lvl As Integer
+    Dim arrLevels() As String
+    Dim colStart As Integer
+    
+    Set ws = ActiveSheet
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    colStart = 10 ' Начинаем временно записывать уровни с колонки J (можно изменить)
+    
+    Application.ScreenUpdating = False
+    
+    ' Определяем максимальное количество уровней (максимальное число точек + 1)
+    maxLevels = 1
+    For i = 1 To lastRow
+        arrLevels = Split(ws.Cells(i, 1).Value, ".")
+        If UBound(arrLevels) + 1 > maxLevels Then maxLevels = UBound(arrLevels) + 1
+    Next i
+    
+    ' Записываем уровни в отдельные колонки (числа)
+    For i = 1 To lastRow
+        arrLevels = Split(ws.Cells(i, 1).Value, ".")
+        For lvl = 0 To maxLevels - 1
+            If lvl <= UBound(arrLevels) Then
+                ' Если пусто, ставим 0
+                If IsNumeric(arrLevels(lvl)) Then
+                    ws.Cells(i, colStart + lvl).Value = CLng(arrLevels(lvl))
+                Else
+                    ws.Cells(i, colStart + lvl).Value = 0
+                End If
+            Else
+                ws.Cells(i, colStart + lvl).Value = 0
+            End If
+        Next lvl
+    Next i
+    
+    ' Сортируем по колонкам с уровнями
+    With ws.Sort
+        .SortFields.Clear
+        For lvl = 0 To maxLevels - 1
+            .SortFields.Add Key:=ws.Range(ws.Cells(1, colStart + lvl), ws.Cells(lastRow, colStart + lvl)), _
+                SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+        Next lvl
+        .SetRange ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, ws.UsedRange.Columns.Count))
+        .Header = xlNo
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .Apply
+    End With
+    
+    ' Удаляем временные колонки с уровнями
+    ws.Range(ws.Columns(colStart), ws.Columns(colStart + maxLevels - 1)).ClearContents
+    
+    Application.ScreenUpdating = True
+    MsgBox "Сортировка завершена!", vbInformation
+End Sub

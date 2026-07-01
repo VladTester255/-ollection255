@@ -1,0 +1,52 @@
+Sub ConvertNumberingToTextAndAssignLevels()
+	Dim para As Paragraph
+	Dim paraRange As Range
+	Dim paraText As String
+	Dim numbering As String
+	Dim level As Integer
+	Dim i As Integer
+	Dim ch As String
+	
+	' 1. Преобразуем все автоматические номера в текст
+	ActiveDocument.Range.ListFormat.ConvertNumbersToText
+	
+	' 2. Проходим по всем абзацам
+	For Each para In ActiveDocument.Paragraphs
+		Set paraRange = para.Range
+		paraText = Trim(paraRange.Text)
+		
+		numbering = ""
+		
+		' Считываем подряд идущие символы в начале абзаца, пока это цифры или точки
+		For i = 1 To Len(paraText)
+			ch = Mid(paraText, i, 1)
+			If (ch >= "0" And ch <= "9") Or ch = "." Then
+				numbering = numbering & ch
+			Else
+				Exit For
+			End If
+		Next i
+		
+		' Если нумерация есть
+		If Len(numbering) > 0 Then
+			' Удаляем точку в конце, если она есть
+			If Right(numbering, 1) = "." Then
+				numbering = Left(numbering, Len(numbering) - 1)
+			End If
+			
+			' Проверяем, что после удаления точки остались цифры и точки
+			' (на всякий случай, если нумерация была пустой)
+			If Len(numbering) > 0 Then
+				' Считаем уровень: количество точек + 1
+				level = Len(numbering) - Len(Replace(numbering, ".", "")) + 1
+				
+				If level > 9 Then level = 9 ' ограничение по уровням
+				
+				' Присваиваем уровень абзацу
+				para.OutlineLevel = level
+			End If
+		End If
+	Next para
+	
+	MsgBox "Обработка завершена!", vbInformation
+End Sub

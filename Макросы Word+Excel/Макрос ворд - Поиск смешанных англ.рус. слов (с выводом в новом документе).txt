@@ -1,0 +1,15 @@
+Sub GetRus()
+' Макрос ворд - Поиск смешанных англ.рус. слов (с выводом в новом документе)
+Dim s$, v
+With CreateObject("vbscript.regexp")
+	.Global = True
+	.Pattern = "([А-Яа-яёЁ]+[.,:;^()-0-9_]*[A-Za-z]+)|([A-Za-z]+[.,;:^()-0-9_]*[А-Яа-яёЁ]+)"
+	.ignorecase = True
+	For Each v In .Execute(ActiveDocument.Range)
+	v = Trim(v)
+	If Right$(v, 1) = ";" Then v = Left(v, Len(v) - 1)
+	If Len(v) Then If v <> "-" Then s = s & Trim$(v) & vbCr
+	Next
+End With
+Documents.Add.Range.InsertAfter s
+End Sub

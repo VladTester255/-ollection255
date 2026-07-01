@@ -1,0 +1,23 @@
+Function СравнитьМассивы(Массив1 As Range, Массив2 As Range) As Boolean
+    '=ЕСЛИ(И(СравнитьМассивы(A5;A4);СравнитьМассивы(B5:C5;B4:C4));"Удалить";"")
+	' Проверяем размеры массивов
+    If Массив1.Rows.Count <> Массив2.Rows.Count Or Массив1.Columns.Count <> Массив2.Columns.Count Then
+        СравнитьМассивы = False ' Возвращаем FALSE, если размеры не совпадают
+        Exit Function
+    End If
+    
+    Dim i As Long, j As Long
+    
+    ' Проходимся по каждой ячейке в массивах и сравниваем значения
+    For i = 1 To Массив1.Rows.Count
+        For j = 1 To Массив1.Columns.Count
+            If Массив1.Cells(i, j).Value <> Массив2.Cells(i, j).Value Then
+                СравнитьМассивы = False ' Возвращаем FALSE, если есть хотя бы одна отличающаяся ячейка
+                Exit Function
+            End If
+        Next j
+    Next i
+    
+    ' Если все ячейки совпадают, возвращаем TRUE
+    СравнитьМассивы = True
+End Function

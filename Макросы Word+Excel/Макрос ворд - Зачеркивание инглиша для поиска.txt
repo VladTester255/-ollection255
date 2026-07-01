@@ -1,0 +1,51 @@
+Sub ЗачеркВсеИнгл()
+'
+' Двойное зачеркие английских букв для поиска
+'
+'
+    Selection.Find.ClearFormatting
+    Selection.Find.Replacement.ClearFormatting
+    With Selection.Find.Replacement.Font
+        .StrikeThrough = False
+        .DoubleStrikeThrough = True
+    End With
+    With Selection.Find
+        .Text = "([A-z]@)"
+        .Replacement.Text = "\1"
+        .Forward = True
+        .Wrap = wdFindContinue
+        .Format = True
+        .MatchCase = False
+        .MatchWholeWord = False
+        .MatchAllWordForms = False
+        .MatchSoundsLike = False
+        .MatchWildcards = True
+    End With
+    Selection.Find.Execute Replace:=wdReplaceAll
+    Selection.EscapeKey
+End Sub
+Sub СнятьЗачеркВсеИнгл()
+'
+' Снятие двойных зачеркиваний
+'
+'
+    Selection.Find.ClearFormatting
+    Selection.Find.Replacement.ClearFormatting
+    With Selection.Find.Replacement.Font
+        .StrikeThrough = False
+        .DoubleStrikeThrough = False
+    End With
+    With Selection.Find
+        .Text = "([A-z]@)"
+        .Replacement.Text = "\1"
+        .Forward = True
+        .Wrap = wdFindContinue
+        .Format = True
+        .MatchCase = False
+        .MatchWholeWord = False
+        .MatchAllWordForms = False
+        .MatchSoundsLike = False
+        .MatchWildcards = True
+    End With
+    Selection.Find.Execute Replace:=wdReplaceAll
+End Sub

@@ -1,0 +1,61 @@
+Sub ВставитьКартинкуВПримечаниеКЯчейкамСправаОтВыделеногоСтолбцаСПутямиККартинкам()
+    ' Объявляем переменные
+    Dim rngPics As Range, rngOut As Range
+    Dim i As Long, p As String
+    Dim w As Long, h As Long
+    
+    On Error GoTo ErrorHandler  ' Устанавливаем обработчик ошибок
+
+    ' Устанавливаем диапазон с путями к картинкам (выделенные ячейки)
+    Set rngPics = Selection
+    ' Устанавливаем диапазон для вставки примечаний (ячейки справа от выделенных)
+    Set rngOut = rngPics.Offset(0, 1)
+    
+    ' Проходим по всем ячейкам в выделенном диапазоне
+    For i = 1 To rngPics.Cells.Count
+        p = Trim(rngPics.Cells(i, 1).Value)  ' Считываем путь к картинке и удаляем пробелы
+
+        With rngOut.Cells(i, 1)
+            ' Проверяем, не является ли ячейка пустой и существует ли файл по указанному пути
+            If p <> "" Then
+                If Dir(p) <> "" Then
+                    ' Получаем размеры картинки
+                    w = LoadPicture(p).Width
+                    h = LoadPicture(p).Height
+                    
+                    ' Добавляем или обновляем примечание
+                    If Not .comment Is Nothing Then .ClearComments
+                    .AddComment.Text Text:=""
+                    .comment.Visible = False
+                    
+                    ' Заливаем примечание картинкой
+                    With .comment.Shape
+                        .Fill.UserPicture p
+                        .ScaleWidth 5, msoFalse, msoScaleFromTopLeft
+                        .ScaleHeight h / w * 5.8, msoFalse, msoScaleFromTopLeft
+                    End With
+                    
+                    ' Сбрасываем заливку ячейки на стандартный цвет (белый)
+                    .Interior.ColorIndex = xlNone
+                    
+                Else
+                    ' Если файл не существует, заливаем ячейку красным цветом и удаляем комментарии
+                    .Interior.Color = RGB(255, 0, 0)
+                    If Not .comment Is Nothing Then .ClearComments
+                End If
+                
+            Else
+                ' Если ячейка пуста, заливаем красным и удаляем комментарии только если они существуют
+                .Interior.Color = RGB(255, 0, 0)
+                If Not .comment Is Nothing Then .ClearComments
+            End If
+            
+        End With
+        
+    Next i
+
+    Exit Sub
+
+ErrorHandler:
+    MsgBox "Произошла ошибка: " & Err.Description & " в строке " & Erl ' Показать сообщение об ошибке с номером строки
+End Sub

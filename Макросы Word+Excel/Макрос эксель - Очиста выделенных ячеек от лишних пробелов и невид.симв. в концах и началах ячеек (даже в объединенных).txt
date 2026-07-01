@@ -1,0 +1,71 @@
+Sub CleanCells()
+' Удаление в конце и начале выделенных ячеек эксель невидимых символов + удаление двойных пробелов и 3 и более переноса строк подряд в 2 переноса
+    Dim cell As Range
+    Dim myStr As String
+    
+    For Each cell In Selection
+        If cell.MergeCells Then
+            ' Обработка объединенных ячеек
+            myStr = cell.MergeArea(1, 1).Value
+            
+            ' Удаление пробелов в начале и конце строки
+            myStr = Trim(myStr)
+            
+            ' Удаление лишних пробелов (две и более в одну)
+            Do While InStr(myStr, "  ") > 0
+                myStr = Replace(myStr, "  ", " ")
+            Loop
+            
+            ' Удаление переносов строк в начале и конце строки
+            While Len(myStr) > 0 And InStr(myStr, vbLf) = 1
+                myStr = Mid(myStr, 2)
+            Wend
+            While Len(myStr) > 0 And Right(myStr, 1) = vbLf
+                myStr = Left(myStr, Len(myStr) - 1)
+            Wend
+            
+            ' Замена трех и более подряд идущих красных строк на две
+            Do While InStr(myStr, vbLf & vbLf & vbLf) > 0
+                myStr = Replace(myStr, vbLf & vbLf & vbLf, vbLf & vbLf)
+            Loop
+            
+            ' Проверка на наличие только непечатаемых символов
+            If Len(myStr) = 0 Then
+                cell.MergeArea.ClearContents
+            Else
+                cell.MergeArea(1, 1).Value = myStr
+            End If
+        Else
+            ' Обработка обычных ячеек
+            myStr = cell.Value
+            
+            ' Удаление пробелов в начале и конце строки
+            myStr = Trim(myStr)
+            
+            ' Удаление лишних пробелов (две и более в одну)
+            Do While InStr(myStr, "  ") > 0
+                myStr = Replace(myStr, "  ", " ")
+            Loop
+            
+            ' Удаление переносов строк в начале и конце строки
+            While Len(myStr) > 0 And InStr(myStr, vbLf) = 1
+                myStr = Mid(myStr, 2)
+            Wend
+            While Len(myStr) > 0 And Right(myStr, 1) = vbLf
+                myStr = Left(myStr, Len(myStr) - 1)
+            Wend
+            
+            ' Замена трех и более подряд идущих красных строк на две
+            Do While InStr(myStr, vbLf & vbLf & vbLf) > 0
+                myStr = Replace(myStr, vbLf & vbLf & vbLf, vbLf & vbLf)
+            Loop
+            
+            ' Проверка на наличие только непечатаемых символов
+            If Len(myStr) = 0 Then
+                cell.ClearContents
+            Else
+                cell.Value = myStr
+            End If
+        End If
+    Next cell
+End Sub

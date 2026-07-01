@@ -1,0 +1,114 @@
+Sub ResizeSelectedImagesProportional()
+    Dim iShape As InlineShape
+    Dim shp As Shape
+    Dim inputValue As String
+    Dim sizes() As String
+    Dim widthValue As Single
+    Dim heightValue As Single
+    Dim originalRatio As Single
+    Dim useProportionalResize As Boolean
+    
+    ' Запросить у пользователя ввод ширины и/или высоты
+    inputValue = InputBox("Введите желаемую ширину и/или высоту (в см)." & vbCrLf & _
+                          "Пример: ""10w"" или ""8h"" или ""8w 10h"": " & vbCrLf & _
+                          "Число с суффиксом 'w' для ширины или 'h' для высоты в сантиметрах.", _
+                          "Изменение размеров картинок из выделенной облости")
+    
+    ' Если ничего не введено, используем значения по умолчанию "9h 12w"
+    If Trim(inputValue) = "" Then
+        inputValue = "9h 12w"
+    End If
+    
+    ' Обработка ввода - делим по пробелу, поддержка 1 или 2 параметров
+    sizes = Split(LCase(Trim(inputValue)))
+    
+    ' Инициализация переменных
+    widthValue = 0
+    heightValue = 0
+    useProportionalResize = True ' По умолчанию ставим пропорциональное изменение
+    
+    Dim part As String
+    Dim valNum As Single
+    Dim suffix As String
+    Dim i As Integer
+    
+    ' Обрабатываем каждый параметр
+    For i = LBound(sizes) To UBound(sizes)
+        part = sizes(i)
+        If Len(part) < 2 Then
+            MsgBox "Некорректный формат входных данных: " & part
+            Exit Sub
+        End If
+        
+        suffix = Right(part, 1)
+        valNum = Val(Left(part, Len(part) - 1))
+        If valNum <= 0 Then
+            MsgBox "Введите корректное положительное число для размера."
+            Exit Sub
+        End If
+        
+        If suffix = "w" Then
+            widthValue = valNum
+        ElseIf suffix = "h" Then
+            heightValue = valNum
+        Else
+            MsgBox "Пожалуйста, используйте суффикс 'w' для ширины или 'h' для высоты, например: 10w или 8h"
+            Exit Sub
+        End If
+    Next i
+    
+    ' Если одновременно указаны ширина и высота, меняем размер без сохранения пропорций
+    ' Если указан только один параметр - пропорционально
+    If widthValue > 0 And heightValue > 0 Then
+        useProportionalResize = False
+    ElseIf widthValue > 0 Or heightValue > 0 Then
+        useProportionalResize = True
+    Else
+        MsgBox "Не указано ни одного корректного значения ширины или высоты."
+        Exit Sub
+    End If
+    
+    ' Обработка встроенных картинок InlineShapes
+    For Each iShape In Selection.InlineShapes
+        With iShape
+            originalRatio = .Width / .Height
+            If useProportionalResize Then
+                .LockAspectRatio = msoTrue
+                If widthValue > 0 Then
+                    .Width = CentimetersToPoints(widthValue)
+                ElseIf heightValue > 0 Then
+                    .Height = CentimetersToPoints(heightValue)
+                End If
+            Else
+                ' Нет пропорциональности - изменяем оба размера
+                .LockAspectRatio = msoFalse
+                If widthValue > 0 Then .Width = CentimetersToPoints(widthValue)
+                If heightValue > 0 Then .Height = CentimetersToPoints(heightValue)
+                ' После изменения включаем LockAspectRatio
+                .LockAspectRatio = msoTrue
+            End If
+        End With
+    Next iShape
+    
+    ' Обработка плавающих картинок Shapes
+    For Each shp In Selection.ShapeRange
+        If shp.Type = msoPicture Or shp.Type = msoLinkedPicture Then
+            With shp
+                originalRatio = .Width / .Height
+                If useProportionalResize Then
+                    .LockAspectRatio = msoTrue
+                    If widthValue > 0 Then
+                        .Width = CentimetersToPoints(widthValue)
+                    ElseIf heightValue > 0 Then
+                        .Height = CentimetersToPoints(heightValue)
+                    End If
+                Else
+                    .LockAspectRatio = msoFalse
+                    If widthValue > 0 Then .Width = CentimetersToPoints(widthValue)
+                    If heightValue > 0 Then .Height = CentimetersToPoints(heightValue)
+                    .LockAspectRatio = msoTrue
+                End If
+            End With
+        End If
+    Next shp
+End Sub

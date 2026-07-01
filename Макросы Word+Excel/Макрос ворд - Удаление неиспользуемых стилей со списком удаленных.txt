@@ -1,0 +1,78 @@
+Sub DeleteUnusedStyles()
+    Dim style As style
+    Dim i As Long
+    Dim used As Boolean
+    Dim para As Paragraph
+    Dim rngStory As Range
+    Dim rngTemp As Range
+    Dim deletedCount As Long
+    Dim deletedStylesList As String
+    Dim reportDoc As Document
+    Dim styleName As String
+    
+    deletedCount = 0
+    deletedStylesList = ""
+    Application.ScreenUpdating = False
+    
+    For i = ActiveDocument.Styles.Count To 1 Step -1
+        Set style = ActiveDocument.Styles(i)
+        
+        If Not style.BuiltIn Then
+            used = False
+            
+            For Each para In ActiveDocument.Paragraphs
+                If para.style = style.NameLocal Then
+                    used = True
+                    Exit For
+                End If
+            Next para
+            
+            If Not used Then
+                Set rngStory = ActiveDocument.StoryRanges(1)
+                
+                Do While Not rngStory Is Nothing And Not used
+                    Set rngTemp = rngStory.Duplicate
+                    With rngTemp.Find
+                        .ClearFormatting
+                        .style = style
+                        .Text = ""
+                        .Forward = True
+                        .Wrap = wdFindStop
+                        .Format = True
+                    End With
+                    
+                    If rngTemp.Find.Execute Then
+                        used = True
+                    End If
+                    
+                    Set rngStory = rngStory.NextStoryRange
+                Loop
+            End If
+            
+            If Not used Then
+                styleName = style.NameLocal ' Сохраняем имя до удаления
+                On Error Resume Next
+                style.Delete
+                If Err.Number = 0 Then
+                    deletedCount = deletedCount + 1
+                    deletedStylesList = deletedStylesList & styleName & vbCrLf
+                End If
+                On Error GoTo 0
+            End If
+        End If
+    Next i
+    
+    Application.ScreenUpdating = True
+    
+    If deletedCount = 0 Then
+        MsgBox "Неиспользуемые стили не найдены.", vbInformation
+    Else
+        Set reportDoc = Documents.Add
+        reportDoc.Content.Text = "Удаление неиспользуемых стилей завершено." & vbCrLf & _
+                                "Удалено стилей: " & deletedCount & vbCrLf & vbCrLf & _
+                                "Список удалённых стилей:" & vbCrLf & deletedStylesList
+        reportDoc.Activate
+        MsgBox "Удаление неиспользуемых стилей завершено." & vbCrLf & _
+               "Открыт новый документ со списком удалённых стилей.", vbInformation
+    End If
+End Sub

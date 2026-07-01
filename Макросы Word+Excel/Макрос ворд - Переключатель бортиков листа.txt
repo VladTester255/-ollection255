@@ -1,0 +1,3 @@
+Sub БортикиЛиста()
+    ActiveWindow.View.ShowTextBoundaries = Not ActiveWindow.View.ShowTextBoundaries
+End Sub

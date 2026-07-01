@@ -1,0 +1,80 @@
+Sub ImportCustomDocumentProperties()
+	' Объявление переменных
+	Dim sourceDoc As Document
+	Dim targetDoc As Document
+	Dim sourceProp As DocumentProperty
+	Dim targetProp As DocumentProperty
+	Dim propName As String
+	Dim sourceFilePath As String
+	Dim propExists As Boolean
+	Dim importedCount As Integer
+	Dim totalCount As Integer
+	' Открытие диалога выбора файла
+	With Application.FileDialog(msoFileDialogFilePicker)
+		.Title = "Выберите исходный файл"
+		.Filters.Clear
+		.Filters.Add "Word документы", "*.docx"
+		.AllowMultiSelect = False
+		If .Show = -1 Then
+			sourceFilePath = .SelectedItems(1)
+		Else
+			MsgBox "Исходный файл не выбран.", vbExclamation
+			Exit Sub
+		End If
+	End With
+	' Определение целевого документа (открытый)
+	Set targetDoc = Application.ActiveDocument
+	' Открытие исходного документа
+	Set sourceDoc = Application.Documents.Open(sourceFilePath)
+	' Подсчет количества считанных свойств
+	totalCount = sourceDoc.CustomDocumentProperties.count
+	' Импорт пользовательских свойств
+	For Each sourceProp In sourceDoc.CustomDocumentProperties
+		propName = sourceProp.Name
+		' Проверка на допустимость символов в имени свойства
+		If IsValidPropertyName(propName) Then
+			propExists = False
+			' Проверка наличия свойства в целевом документе
+			For Each targetProp In targetDoc.CustomDocumentProperties
+				If targetProp.Name = propName Then
+					' Если свойство уже существует, удаляем его
+					targetDoc.CustomDocumentProperties(propName).Delete
+					propExists = True
+					Exit For
+				End If
+			Next targetProp
+			' Добавление свойства в целевой документ
+			If Not propExists Then
+				targetDoc.CustomDocumentProperties.Add Name:=propName, _
+					LinkToContent:=False, _
+					Type:=msoPropertyTypeString, _
+					Value:=sourceProp.Value
+				importedCount = importedCount + 1
+			End If
+		End If
+	Next sourceProp
+	' Закрытие исходного документа
+	sourceDoc.Close
+	' Сообщение о количестве импортированных свойств
+	If importedCount > 0 Then
+		MsgBox "Импорт пользовательских свойств завершен." & vbCrLf & _
+			"Считано свойств: " & totalCount & vbCrLf & _
+			"Записано свойств: " & importedCount, vbInformation
+	Else
+		MsgBox "Импорт пользовательских свойств завершен." & vbCrLf & _
+			"Не удалось записать свойства.", vbExclamation
+	End If
+End Sub
+Function IsValidPropertyName(ByVal propName As String) As Boolean
+	' Функция для проверки допустимости символов в имени свойства
+	Dim invalidChars() As String
+	invalidChars = Split("\ / : * ? "" < > |", " ")
+	Dim i As Integer
+	For i = 0 To UBound(invalidChars)
+		If InStr(propName, invalidChars(i)) > 0 Then
+			IsValidPropertyName = False
+			Exit Function
+		End If
+	Next i
+	IsValidPropertyName = True
+End Function

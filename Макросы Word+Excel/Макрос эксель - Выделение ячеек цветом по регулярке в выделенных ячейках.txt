@@ -1,0 +1,126 @@
+Option Explicit
+
+Sub RegexFillColorOnSelection()
+On Error GoTo ErrHandler
+    Dim regEx As Object, matches As Object, m As Object
+    Dim findPattern As String
+    Dim applyFillColor As Long
+    Dim rng As Range, cell As Range, targetRange As Range
+    Dim txt As String
+    Dim i As Long
+    Dim logSht As Worksheet, logRow As Long
+    Dim wb As Workbook
+    Set wb = ThisWorkbook
+
+    ' ---------------- Параметры ----------------
+    applyFillColor = RGB(250, 50, 50) ' цвет заливки для найденных ячеек
+	 ' RGB(150, 200, 255) - Голубой, RGB(250, 250, 100) - Желтый, RGB(250, 50, 50) - Красный.
+    ' ------------------------------------------- [пП]риорит.{1,5} [АA]|[Кк]лас.{1,5} [АA]|[Кк]атегор.{1,5} [АA]
+
+    ' Ввод регулярного выражения (регистрозависимый)
+    findPattern = InputBox("Введите регулярное выражение (регистрозависимое):", "Регулярное выражение")
+    If findPattern = "" Then Exit Sub
+
+    ' Проверка выделения
+    If TypeName(Selection) <> "Range" Then
+        MsgBox "Выберите диапазон ячеек и запустите макрос снова.", vbExclamation
+        Exit Sub
+    End If
+    Set rng = Selection
+
+    ' Лог
+    On Error Resume Next
+    Set logSht = wb.Worksheets("RegexReplace_Log")
+    If logSht Is Nothing Then
+        Set logSht = wb.Worksheets.Add(Before:=ActiveSheet)
+        logSht.Name = "RegexReplace_Log"
+    Else
+        logSht.Cells.Clear
+    End If
+    On Error GoTo ErrHandler
+    logSht.Range("A1:D1").Value = Array("Cell", "MatchesFound", "Action", "Note")
+    logRow = 2
+
+    ' Инициализация RegExp
+    Set regEx = CreateObject("VBScript.RegExp")
+    regEx.Pattern = findPattern
+    regEx.Global = True
+    regEx.MultiLine = True
+    regEx.IgnoreCase = False
+
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+
+    For Each cell In rng.Cells
+        On Error Resume Next
+        ' Обрабатываем только верхнюю левую ячейку MergeArea
+        If cell.MergeCells Then
+            If cell.Address <> cell.MergeArea.Cells(1, 1).Address Then
+                GoTo LogSkipMerged
+            Else
+                Set targetRange = cell.MergeArea
+            End If
+        Else
+            Set targetRange = cell
+        End If
+        On Error GoTo ErrHandler
+
+        ' Пропускаем формулы
+        If cell.HasFormula Then
+            logSht.Cells(logRow, 1).Value = cell.Address(False, False)
+            logSht.Cells(logRow, 2).Value = 0
+            logSht.Cells(logRow, 3).Value = "Skipped"
+            logSht.Cells(logRow, 4).Value = "Formula"
+            logRow = logRow + 1
+            GoTo NextCell
+        End If
+
+        txt = CStr(cell.Value)
+        If txt = "" Then
+            logSht.Cells(logRow, 1).Value = cell.Address(False, False)
+            logSht.Cells(logRow, 2).Value = 0
+            logSht.Cells(logRow, 3).Value = "Skipped"
+            logSht.Cells(logRow, 4).Value = "Empty"
+            logRow = logRow + 1
+            GoTo NextCell
+        End If
+
+        If Not regEx.Test(txt) Then
+            logSht.Cells(logRow, 1).Value = cell.Address(False, False)
+            logSht.Cells(logRow, 2).Value = 0
+            logSht.Cells(logRow, 3).Value = "No match"
+            logSht.Cells(logRow, 4).Value = ""
+            logRow = logRow + 1
+            GoTo NextCell
+        End If
+
+        Set matches = regEx.Execute(txt)
+        Dim matchesCount As Long: matchesCount = matches.Count
+
+        ' Применяем заливку к целой ячейке/MergeArea (не трогаем .Font/Characters)
+        targetRange.Interior.Color = applyFillColor
+
+        logSht.Cells(logRow, 1).Value = cell.Address(False, False)
+        logSht.Cells(logRow, 2).Value = matchesCount
+        logSht.Cells(logRow, 3).Value = "Filled"
+        logSht.Cells(logRow, 4).Value = ""
+        logRow = logRow + 1
+
+NextCell:
+Continue:
+    Next cell
+
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+
+    MsgBox "Готово. Смотрите лист RegexReplace_Log.", vbInformation
+    Exit Sub
+
+LogSkipMerged:
+    GoTo NextCell
+
+ErrHandler:
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    MsgBox "Ошибка " & Err.Number & ": " & Err.Description, vbExclamation
+End Sub
