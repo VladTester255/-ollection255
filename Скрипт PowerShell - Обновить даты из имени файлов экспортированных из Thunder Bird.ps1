@@ -1,13 +1,13 @@
-# Получаем папку со скриптом
+# РџРѕР»СѓС‡Р°РµРј РїР°РїРєСѓ СЃРѕ СЃРєСЂРёРїС‚РѕРј
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Получаем все *.eml файлы в папке скрипта
+# РџРѕР»СѓС‡Р°РµРј РІСЃРµ *.eml С„Р°Р№Р»С‹ РІ РїР°РїРєРµ СЃРєСЂРёРїС‚Р°
 Get-ChildItem -Path $scriptDir -Filter *.eml | ForEach-Object {
     $file = $_
     $name = $file.Name
 
-    # Паттерн: " - YYYY-MM-DD HHmm" в конце имени файла перед расширением
-    # Регулярное выражение для поиска даты и времени
+    # РџР°С‚С‚РµСЂРЅ: " - YYYY-MM-DD HHmm" РІ РєРѕРЅС†Рµ РёРјРµРЅРё С„Р°Р№Р»Р° РїРµСЂРµРґ СЂР°СЃС€РёСЂРµРЅРёРµРј
+    # Р РµРіСѓР»СЏСЂРЅРѕРµ РІС‹СЂР°Р¶РµРЅРёРµ РґР»СЏ РїРѕРёСЃРєР° РґР°С‚С‹ Рё РІСЂРµРјРµРЅРё
     if ($name -match '- (\d{4})-(\d{2})-(\d{2}) (\d{2})(\d{2})') {
         $year = $matches[1]
         $month = $matches[2]
@@ -15,22 +15,22 @@ Get-ChildItem -Path $scriptDir -Filter *.eml | ForEach-Object {
         $hour = $matches[4]
         $minute = $matches[5]
 
-        # Формируем объект DateTime
+        # Р¤РѕСЂРјРёСЂСѓРµРј РѕР±СЉРµРєС‚ DateTime
         try {
             $dt = Get-Date -Year $year -Month $month -Day $day -Hour $hour -Minute $minute -Second 0
 
-            # Смена дат файла
-            # DateCreated изменить можно, но в некоторых системах нужны права администратора
+            # РЎРјРµРЅР° РґР°С‚ С„Р°Р№Р»Р°
+            # DateCreated РёР·РјРµРЅРёС‚СЊ РјРѕР¶РЅРѕ, РЅРѕ РІ РЅРµРєРѕС‚РѕСЂС‹С… СЃРёСЃС‚РµРјР°С… РЅСѓР¶РЅС‹ РїСЂР°РІР° Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°
             $file.CreationTime = $dt
             $file.LastWriteTime = $dt
 
-            Write-Host "Даты изменены для файла:" $file.Name "->" $dt
+            Write-Host "Р”Р°С‚С‹ РёР·РјРµРЅРµРЅС‹ РґР»СЏ С„Р°Р№Р»Р°:" $file.Name "->" $dt
         }
         catch {
-            Write-Warning "Неверная дата в файле: $name"
+            Write-Warning "РќРµРІРµСЂРЅР°СЏ РґР°С‚Р° РІ С„Р°Р№Р»Рµ: $name"
         }
     }
     else {
-        Write-Host "Дата в имени не найдена для файла:" $file.Name
+        Write-Host "Р”Р°С‚Р° РІ РёРјРµРЅРё РЅРµ РЅР°Р№РґРµРЅР° РґР»СЏ С„Р°Р№Р»Р°:" $file.Name
     }
 }
