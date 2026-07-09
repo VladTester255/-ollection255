@@ -3,6 +3,7 @@
 Может кому тоже пригодится.
 
 Полезности:
+```
 https://github.com/dnGrep/dnGrep
 https://github.com/handbrake/handbrake
 https://github.com/ip7z/7zip
@@ -21,3 +22,4 @@ https://github.com/MishkinIN/Font_GOST_2.304
 https://github.com/Metrolog/Font.GOST2.304-81
 https://www.google.com/search?udm=50
 https://www.perplexity.ai/
+```
